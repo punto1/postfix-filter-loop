@@ -2,10 +2,13 @@
 # License is, do whatever you wanna do with it (at least I think that that is what LGPL v3 says)
 #
 
-import smtpd
+import smtpd 
 import asyncore
 import smtplib
 import traceback
+import os
+
+BCCDIR = "/etc/postfix/postfix-filter-loop/tmp_emailcopies"
 
 class CustomSMTPServer(smtpd.SMTPServer):
 
@@ -27,7 +30,12 @@ class CustomSMTPServer(smtpd.SMTPServer):
                 # such as functions to change fields within the body (From, Reply-to etc), 
                 # and/or to send error codes/mails back to Postfix.
                 # Error handling is not really fantastic either.
-                pass
+                fpos = data.find('ESMTPS id')+10
+                emailid = data[fpos:fpos+10]
+                fname = os.path.join(BCCDIR, "%s%s" %(emailid, recipient))
+                fh = open(fname, 'w')
+                fh.write("from: %s\n\nto:%s\n\ndata:%s" %(mailfrom, recipient, data) )
+                fh.close()
             except:
                 pass
                 print 'Something went south'
